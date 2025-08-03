@@ -17,8 +17,16 @@ func CreateUser(u *User) error {
 	return err
 }
 
-func FindByEmail(email string) (*User, error) {
+func UpdateMany(filter, update bson.M) (*mongo.UpdateResult, error) {
+	return getCollection().UpdateMany(context.TODO(), filter, update)
+}
+
+func UpdateOne(filter, update bson.M) (*mongo.UpdateResult, error) {
+	return getCollection().UpdateOne(context.TODO(), filter, update)
+}
+
+func FindOne(filter bson.M) (*User, error) {
 	var user User
-	err := getCollection().FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
+	err := getCollection().FindOne(context.TODO(), filter).Decode(&user)
 	return &user, err
 }

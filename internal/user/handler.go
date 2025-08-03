@@ -2,6 +2,7 @@ package user
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func RegisterHandler(c *fiber.Ctx) error {
@@ -22,7 +23,7 @@ func LoginHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid body"})
 	}
-	user, err := FindByEmail(body["email"])
+	user, err := FindOne(bson.M{"email": body["email"]})
 	if err != nil || !CheckPassword(user.Password, body["password"]) {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}

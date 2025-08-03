@@ -17,6 +17,11 @@ func CreateShortURL(doc *ShortURL) error {
 	return err
 }
 
+func DeleteShortURL(filter bson.M) error {
+	_, err := getCollection().DeleteOne(context.TODO(), filter)
+	return err
+}
+
 func FindByCode(code string) (*ShortURL, error) {
 	var url ShortURL
 	err := getCollection().FindOne(context.TODO(), bson.M{"short_code": code}).Decode(&url)
