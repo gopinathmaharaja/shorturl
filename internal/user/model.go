@@ -7,7 +7,7 @@ import (
 type User struct {
 	ID             string    `bson:"_id,omitempty" json:"id"`
 	Email          string    `bson:"email" json:"email"`
-	Password       string    `bson:"password" json:"-"`
+	Password       string    `bson:"password" json:"password"`
 	APIKey         string    `bson:"api_key" json:"api_key"`
 	TotalCount     int       `bson:"total_count" json:"total_count"`
 	RemainingCount int       `bson:"remaining_count" json:"remaining_count"`

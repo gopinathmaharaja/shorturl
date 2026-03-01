@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"sync"
 	"time"
 
@@ -37,10 +38,15 @@ func RateLimit(requestsPerMinute int) fiber.Handler {
 			limiter.store[ip] = valid
 
 			if len(valid) >= requestsPerMinute {
+				log.Printf("[RATELIMIT] Rate limit exceeded for IP: %s (limit: %d/min, current: %d requests)", ip, requestsPerMinute, len(valid))
 				return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 					"error": "Rate limit exceeded",
 				})
 			}
+
+			log.Printf("[RATELIMIT] Request from IP: %s (requests in window: %d/%d)", ip, len(valid), requestsPerMinute)
+		} else {
+			log.Printf("[RATELIMIT] First request from IP: %s (limit: %d/min)", ip, requestsPerMinute)
 		}
 
 		limiter.store[ip] = append(limiter.store[ip], now)
