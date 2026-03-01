@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func JWTProtected() fiber.Handler {
@@ -65,7 +66,12 @@ func JWTProtected() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
 
-		userData, err := user.FindOne(bson.M{"_id": userID})
+		userObjID, err := primitive.ObjectIDFromHex(userID)
+		if err != nil {
+			log.Printf("[JWT-MIDDLEWARE] FAILED - Invalid user ID format from IP: %s: %v", clientIP, err)
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		}
+		userData, err := user.FindOne(bson.M{"_id": userObjID})
 		if err != nil {
 			log.Printf("[JWT-MIDDLEWARE] FAILED - User not found (ID: %s) from IP: %s, error: %v", userID, clientIP, err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func CreateHandler(c *fiber.Ctx) error {
@@ -71,7 +72,12 @@ func CreateHandler(c *fiber.Ctx) error {
 // GetUserShortURLCount returns the number of remaining short URLs the user can create.
 func GetUserShortURLCount(userID string) (int, error) {
 	log.Printf("[SHORTURL-SERVICE] Fetching URL count for user: %s", userID)
-	u, err := user.FindOne(bson.M{"_id": userID})
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		log.Printf("[SHORTURL-SERVICE] FAILED - Invalid user ID format: %s: %v", userID, err)
+		return 0, err
+	}
+	u, err := user.FindOne(bson.M{"_id": userObjID})
 	if err != nil {
 		log.Printf("[SHORTURL-SERVICE] ERROR fetching user data for %s: %v", userID, err)
 		return 0, err
