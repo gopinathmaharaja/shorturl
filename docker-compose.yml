@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: shorturl_app
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB_NAME=shorturl
+      - JWT_SECRET=your-production-secret-key
+      - REDIS_URL=redis:6379
+      - ENV=production
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - shorturl-network
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0-alpine
+    container_name: shorturl_mongo
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      - shorturl-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: shorturl_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shorturl-network
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  mongo_config:
+  redis_data:
+
+networks:
+  shorturl-network:
+    driver: bridge

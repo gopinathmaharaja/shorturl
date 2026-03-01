@@ -15,13 +15,16 @@ func Setup(app *fiber.App) {
 	api := app.Group("/api")
 	api.Get("/health", handlers.HealthCheck)
 	api.Get("/dashboard", monitor.New())
+
 	auth := api.Group("/auth")
+	auth.Use(middleware.RateLimit(5))
 	auth.Post("/register", user.RegisterHandler)
 	auth.Post("/login", user.LoginHandler)
 
 	protected := api.Group("/url")
 	protected.Use(middleware.JWTProtected())
+	protected.Use(middleware.RateLimit(30))
 	protected.Post("/create", shortUrl.CreateHandler)
 
-	app.Get("/:code", shortUrl.RedirectHandler)
+	app.Get("/:code", middleware.RateLimit(100), shortUrl.RedirectHandler)
 }

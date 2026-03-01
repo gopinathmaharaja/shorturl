@@ -7,11 +7,16 @@ import (
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+var rng *rand.Rand
+
+func init() {
+	rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
 func generateCode(n int) string {
-	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		b[i] = charset[rng.Intn(len(charset))]
 	}
 	return string(b)
 }
@@ -21,5 +26,7 @@ func GenerateShortURL(original string, userID string) *ShortURL {
 		Original:  original,
 		ShortCode: generateCode(6),
 		CreatedBy: userID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
