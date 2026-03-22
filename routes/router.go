@@ -23,8 +23,8 @@ func Setup(app *fiber.App) {
 
 	protected := api.Group("/url")
 	protected.Use(middleware.JWTProtected())
-	protected.Use(middleware.RateLimit(30))
+	protected.Use(middleware.RateLimit(1000))
 	protected.Post("/create", shortUrl.CreateHandler)
 
-	app.Get("/:code", middleware.RateLimit(100), shortUrl.RedirectHandler)
+	app.Get("/:code", middleware.RateLimit(1000), shortUrl.RedirectHandler)
 }

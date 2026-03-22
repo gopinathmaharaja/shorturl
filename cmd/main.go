@@ -22,7 +22,6 @@ func main() {
 	logger.Init()
 	logger.InfoLog.Println("========================================")
 	logger.InfoLog.Println("Short URL Service Starting")
-	logger.InfoLog.Println("========================================")
 
 	err := godotenv.Load()
 	if err != nil {
@@ -31,7 +30,13 @@ func main() {
 		logger.InfoLog.Println(".env file loaded successfully")
 	}
 
-	logger.InfoLog.Printf("Environment: %s", os.Getenv("ENV"))
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = "prod"
+		os.Setenv("ENV", env)
+		logger.WarnLog.Println("Warning: ENV not set, defaulting to 'prod'")
+	}
+	logger.InfoLog.Printf("Environment: %s", env)
 
 	app := fiber.New(fiber.Config{
 		AppName: "Short URL Service v1.0",
@@ -68,9 +73,7 @@ func main() {
 		sig := <-sigChan
 
 		logger.InfoLog.Printf("Received signal: %v", sig)
-		logger.InfoLog.Println("========================================")
 		logger.InfoLog.Println("Shutting down server gracefully...")
-		logger.InfoLog.Println("========================================")
 
 		c.Stop()
 		logger.InfoLog.Println("Cron scheduler stopped")
@@ -92,9 +95,7 @@ func main() {
 	}
 
 	logger.InfoLog.Printf("Server listening on port %s", port)
-	logger.InfoLog.Println("========================================")
 	logger.InfoLog.Println("Short URL Service is now READY")
-	logger.InfoLog.Println("========================================")
 
 	if err := app.Listen(":" + port); err != nil {
 		logger.ErrorLog.Printf("Error starting server: %v", err)

@@ -17,16 +17,17 @@ var client *mongo.Client
 func Connect() {
 	log.Println("[DATABASE] ========================================")
 	log.Println("[DATABASE] Starting MongoDB connection...")
-	log.Println("[DATABASE] ========================================")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		log.Fatal("[DATABASE] FATAL - MONGO_URI environment variable not set")
+		mongoURI = "mongodb://localhost:27017"
+		log.Printf("[DATABASE] MONGO_URI not set, using default: %s", mongoURI)
+	} else {
+		log.Printf("[DATABASE] MongoDB URI loaded: %s", mongoURI)
 	}
-	log.Printf("[DATABASE] MongoDB URI loaded: %s", mongoURI)
 
 	clientOptions := options.Client().
 		ApplyURI(mongoURI).
@@ -59,7 +60,6 @@ func Connect() {
 
 	log.Println("[DATABASE] ========================================")
 	log.Println("[DATABASE] MongoDB connection READY")
-	log.Println("[DATABASE] ========================================")
 }
 
 func Disconnect() {
