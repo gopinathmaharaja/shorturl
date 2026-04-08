@@ -11,9 +11,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func StartCleaningExpiredShortURLs(c *cron.Cron) {
+func StartCleaningExpiredShortURLs(c *cron.Cron, repo shortUrl.Repository) {
 	_, err := c.AddFunc("0 0 1 * *", func() {
-		err := shortUrl.DeleteShortURL(bson.M{
+		err := repo.DeleteShortURL(bson.M{
 			"expire_at": bson.M{
 				"$lt": time.Now(),
 			},
@@ -26,9 +26,9 @@ func StartCleaningExpiredShortURLs(c *cron.Cron) {
 		log.Println(err)
 	}
 }
-func StartMonthlyResetRemainingCount(c *cron.Cron) {
+func StartMonthlyResetRemainingCount(c *cron.Cron, repo user.Repository) {
 	_, err := c.AddFunc("0 0 1 * *", func() {
-		_, err := user.UpdateMany(bson.M{}, bson.M{
+		_, err := repo.UpdateMany(bson.M{}, bson.M{
 			"$set": bson.M{
 				"remaining_count": "$total_count",
 			},

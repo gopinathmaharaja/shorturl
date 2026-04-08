@@ -4,30 +4,40 @@ import (
 	"context"
 	"log"
 
-	"short-url/pkg/db"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func getCollection() *mongo.Collection {
-	return db.DB.Collection("shorturls")
+type Repository interface {
+	CreateShortURL(doc *ShortURL) error
+	DeleteShortURL(filter bson.M) error
+	FindByCode(code string) (*ShortURL, error)
 }
 
-func CreateShortURL(doc *ShortURL) error {
+type shortUrlRepository struct {
+	collection *mongo.Collection
+}
+
+func NewRepository(collection *mongo.Collection) Repository {
+	return &shortUrlRepository{collection: collection}
+}
+
+func (r *shortUrlRepository) CreateShortURL(doc *ShortURL) error {
 	log.Printf("[SHORTURL-REPO] Creating short URL: Code=%s, Original=%s, CreatedBy=%s", doc.ShortCode, doc.Original, doc.CreatedBy)
-	result, err := getCollection().InsertOne(context.TODO(), doc)
+	result, err := r.collection.InsertOne(context.TODO(), doc)
 	if err != nil {
 		log.Printf("[SHORTURL-REPO] ERROR creating short URL %s: %v", doc.ShortCode, err)
 		return err
 	}
+	doc.ID = result.InsertedID.(primitive.ObjectID).Hex()
 	log.Printf("[SHORTURL-REPO] Short URL created successfully. ID: %v, Code: %s", result.InsertedID, doc.ShortCode)
 	return nil
 }
 
-func DeleteShortURL(filter bson.M) error {
+func (r *shortUrlRepository) DeleteShortURL(filter bson.M) error {
 	log.Printf("[SHORTURL-REPO] Deleting short URL with filter: %+v", filter)
-	result, err := getCollection().DeleteOne(context.TODO(), filter)
+	result, err := r.collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		log.Printf("[SHORTURL-REPO] ERROR deleting short URL: %v", err)
 		return err
@@ -36,10 +46,10 @@ func DeleteShortURL(filter bson.M) error {
 	return nil
 }
 
-func FindByCode(code string) (*ShortURL, error) {
+func (r *shortUrlRepository) FindByCode(code string) (*ShortURL, error) {
 	log.Printf("[SHORTURL-REPO] Finding short URL with code: %s", code)
 	var url ShortURL
-	err := getCollection().FindOne(context.TODO(), bson.M{"short_code": code}).Decode(&url)
+	err := r.collection.FindOne(context.TODO(), bson.M{"short_code": code}).Decode(&url)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("[SHORTURL-REPO] Short URL not found with code: %s", code)
 		return nil, err

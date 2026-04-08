@@ -11,6 +11,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 
+	"short-url/internal/shortUrl"
+	"short-url/internal/user"
 	"short-url/internal/utils"
 	"short-url/pkg/db"
 	"short-url/pkg/logger"
@@ -51,19 +53,31 @@ func main() {
 		db.Disconnect()
 	}()
 
+	// Wire up Dependency Injection
+	logger.InfoLog.Println("Wiring up application dependencies...")
+	
+	userRepo := user.NewRepository(db.GetCollection("users"))
+	userSvc := user.NewService(userRepo)
+	userCtrl := user.NewController(userSvc)
+
+	shortUrlRepo := shortUrl.NewRepository(db.GetCollection("shorturls"))
+	analyticsRepo := shortUrl.NewAnalyticsRepository(db.GetCollection("analytics"))
+	shortUrlSvc := shortUrl.NewService(shortUrlRepo, userSvc)
+	shortUrlCtrl := shortUrl.NewController(shortUrlSvc, analyticsRepo)
+
 	// Initialize cron scheduler
 	logger.InfoLog.Println("Initializing cron scheduler...")
 	c := cron.New()
-	utils.StartCleaningExpiredShortURLs(c)
+	utils.StartCleaningExpiredShortURLs(c, shortUrlRepo)
 	logger.InfoLog.Println("Cron job registered: Cleaning expired short URLs")
-	utils.StartMonthlyResetRemainingCount(c)
+	utils.StartMonthlyResetRemainingCount(c, userRepo)
 	logger.InfoLog.Println("Cron job registered: Monthly reset remaining count")
 	c.Start()
 	logger.InfoLog.Println("Cron scheduler started")
 
 	// Setup routes
 	logger.InfoLog.Println("Setting up routes...")
-	routes.Setup(app)
+	routes.Setup(app, userCtrl, shortUrlCtrl, userRepo)
 	logger.InfoLog.Println("Routes configured successfully")
 
 	// Graceful shutdown

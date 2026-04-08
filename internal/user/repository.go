@@ -4,30 +4,41 @@ import (
 	"context"
 	"log"
 
-	"short-url/pkg/db"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func getCollection() *mongo.Collection {
-	return db.DB.Collection("users")
+type Repository interface {
+	CreateUser(u *User) error
+	UpdateMany(filter, update bson.M) (*mongo.UpdateResult, error)
+	UpdateOne(filter, update bson.M) (*mongo.UpdateResult, error)
+	FindOne(filter bson.M) (*User, error)
 }
 
-func CreateUser(u *User) error {
+type userRepository struct {
+	collection *mongo.Collection
+}
+
+func NewRepository(collection *mongo.Collection) Repository {
+	return &userRepository{collection: collection}
+}
+
+func (r *userRepository) CreateUser(u *User) error {
 	log.Printf("[USER-REPO] Creating user with email: %s", u.Email)
-	result, err := getCollection().InsertOne(context.TODO(), u)
+	result, err := r.collection.InsertOne(context.TODO(), u)
 	if err != nil {
 		log.Printf("[USER-REPO] ERROR creating user %s: %v", u.Email, err)
 		return err
 	}
+	u.ID = result.InsertedID.(primitive.ObjectID).Hex() // Assuming MongoDB uses ObjectId
 	log.Printf("[USER-REPO] User created successfully with ID: %v, Email: %s", result.InsertedID, u.Email)
 	return nil
 }
 
-func UpdateMany(filter, update bson.M) (*mongo.UpdateResult, error) {
+func (r *userRepository) UpdateMany(filter, update bson.M) (*mongo.UpdateResult, error) {
 	log.Printf("[USER-REPO] Updating multiple users. Filter: %+v", filter)
-	result, err := getCollection().UpdateMany(context.TODO(), filter, update)
+	result, err := r.collection.UpdateMany(context.TODO(), filter, update)
 	if err != nil {
 		log.Printf("[USER-REPO] ERROR updating multiple users: %v", err)
 		return nil, err
@@ -36,9 +47,9 @@ func UpdateMany(filter, update bson.M) (*mongo.UpdateResult, error) {
 	return result, nil
 }
 
-func UpdateOne(filter, update bson.M) (*mongo.UpdateResult, error) {
+func (r *userRepository) UpdateOne(filter, update bson.M) (*mongo.UpdateResult, error) {
 	log.Printf("[USER-REPO] Updating single user. Filter: %+v", filter)
-	result, err := getCollection().UpdateOne(context.TODO(), filter, update)
+	result, err := r.collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		log.Printf("[USER-REPO] ERROR updating user: %v", err)
 		return nil, err
@@ -47,10 +58,10 @@ func UpdateOne(filter, update bson.M) (*mongo.UpdateResult, error) {
 	return result, nil
 }
 
-func FindOne(filter bson.M) (*User, error) {
+func (r *userRepository) FindOne(filter bson.M) (*User, error) {
 	log.Printf("[USER-REPO] Finding user with filter: %+v", filter)
 	var user User
-	err := getCollection().FindOne(context.TODO(), filter).Decode(&user)
+	err := r.collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("[USER-REPO] User not found with filter: %+v", filter)
 		return nil, err

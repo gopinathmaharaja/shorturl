@@ -14,6 +14,14 @@ import (
 var DB *mongo.Database
 var client *mongo.Client
 
+// GetCollection returns a collection from the database
+func GetCollection(name string) *mongo.Collection {
+	if DB == nil {
+		log.Fatalf("[DATABASE] FATAL - Attempted to get collection %s before database connection was established", name)
+	}
+	return DB.Collection(name)
+}
+
 func Connect() {
 	log.Println("[DATABASE] ========================================")
 	log.Println("[DATABASE] Starting MongoDB connection...")
